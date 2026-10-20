@@ -737,8 +737,7 @@
     padding: 12px 14px;
     background: var(--surface);
     border: 1px solid var(--border);
-    border-left: 3px solid transparent;
-    border-radius: 4px;
+    border-radius: 6px;
     cursor: pointer;
     transform-style: preserve-3d;
     transform: translate3d(0, 0, 0) scale(1);
@@ -748,8 +747,8 @@
     transition:
       transform 0.35s var(--ease-spring),
       box-shadow 0.35s var(--ease-spring),
-      border-color 0.2s ease,
-      background 0.2s ease;
+      border-color 0.22s ease,
+      background 0.22s ease;
     will-change: transform, box-shadow;
   }
   .topic:hover {
@@ -763,24 +762,24 @@
     z-index: 5;
   }
 
-  /* Topic completed state with emerald rim and glow */
+  /* Apple-Style Symmetrical Completed State: Ambient Radiance & Specular Rim */
   .topic.done {
-    background: rgba(16, 185, 129, 0.04);
-    border-color: rgba(16, 185, 129, 0.22);
-    border-left: 3px solid var(--accent-primary);
+    background: linear-gradient(180deg, rgba(16, 185, 129, 0.06) 0%, rgba(16, 185, 129, 0.015) 100%), #181919;
+    border: 1px solid rgba(16, 185, 129, 0.26);
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.07),
+      inset 0 1px 0 rgba(16, 185, 129, 0.24),
+      inset 0 0 20px -8px rgba(16, 185, 129, 0.12),
       0 4px 14px -3px rgba(0, 0, 0, 0.45);
   }
   .topic.done:hover {
-    background: rgba(16, 185, 129, 0.07);
-    border-color: rgba(16, 185, 129, 0.38);
-    border-left: 3px solid var(--accent-primary);
+    background: linear-gradient(180deg, rgba(16, 185, 129, 0.09) 0%, rgba(16, 185, 129, 0.025) 100%), #1B1E1C;
+    border-color: rgba(16, 185, 129, 0.45);
     transform: translate3d(0, -2px, 12px) scale(1.006);
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.12),
+      inset 0 1px 0 rgba(16, 185, 129, 0.38),
+      inset 0 0 24px -6px rgba(16, 185, 129, 0.18),
       0 12px 28px -6px rgba(0, 0, 0, 0.65),
-      0 0 18px -2px rgba(16, 185, 129, 0.18);
+      0 0 20px -2px rgba(16, 185, 129, 0.2);
     z-index: 5;
   }
 
@@ -792,9 +791,12 @@
     accent-color: var(--accent-primary);
     flex: 0 0 auto;
     cursor: pointer;
-    border-radius: 3px;
+    border-radius: 4px;
     transform-style: preserve-3d;
-    transition: transform 0.2s var(--ease-spring);
+    transition: transform 0.2s var(--ease-spring), filter 0.2s ease;
+  }
+  .topic.done input[type="checkbox"] {
+    filter: drop-shadow(0 0 5px rgba(16, 185, 129, 0.5));
   }
 
   @keyframes checkboxSpringPop {
@@ -816,27 +818,33 @@
     animation: checkboxSpringPop 0.48s var(--ease-spring) forwards;
   }
 
-  @keyframes greenAccentReveal {
+  /* Apple-grade Specular Pulse on Completion */
+  @keyframes appleCompletionPulse {
     0% {
-      border-left-color: transparent;
-      box-shadow: none;
-    }
-    45% {
-      border-left-color: #34D399;
+      border-color: rgba(16, 185, 129, 0.55);
       box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.18),
-        0 0 18px rgba(16, 185, 129, 0.35);
+        inset 0 1px 0 rgba(255, 255, 255, 0.3),
+        inset 0 0 25px rgba(16, 185, 129, 0.25),
+        0 0 18px rgba(16, 185, 129, 0.3);
+    }
+    50% {
+      border-color: rgba(16, 185, 129, 0.4);
+      box-shadow:
+        inset 0 1px 0 rgba(16, 185, 129, 0.35),
+        inset 0 0 22px -4px rgba(16, 185, 129, 0.2),
+        0 0 12px rgba(16, 185, 129, 0.2);
     }
     100% {
-      border-left-color: var(--accent-primary);
+      border-color: rgba(16, 185, 129, 0.26);
       box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.07),
+        inset 0 1px 0 rgba(16, 185, 129, 0.24),
+        inset 0 0 20px -8px rgba(16, 185, 129, 0.12),
         0 4px 14px -3px rgba(0, 0, 0, 0.45);
     }
   }
 
   .topic.just-completed {
-    animation: greenAccentReveal 0.5s var(--ease-spring) forwards;
+    animation: appleCompletionPulse 0.55s var(--ease-spring) forwards;
   }
 
   .topic-content {
@@ -1039,8 +1047,8 @@
       display: none !important;
     }
     .topic.done {
-      background: #f0f0f0;
-      border-left: 3px solid #000000;
+      background: #f8f8f8;
+      border-color: #666666;
     }
     .topic-title, .topic.done .topic-title {
       color: #000000;
