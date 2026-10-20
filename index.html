@@ -1,0 +1,1615 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JavaScript → TypeScript → Playwright Revision Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #121212;
+    --surface: #1A1A1A;
+    --surface-sub: #161616;
+    --surface-hover: #222222;
+    --border: #2A2A2A;
+    --border-hover: #3E3E3E;
+    --text: #F3F4F6;
+    --text-muted: #8E8E93;
+    --accent-primary: #10B981;
+    --accent-primary-dim: rgba(16, 185, 129, 0.08);
+    --accent-primary-border: rgba(16, 185, 129, 0.25);
+    --accent-secondary: #F59E0B;
+    --accent-secondary-dim: rgba(245, 158, 11, 0.1);
+    --accent-secondary-border: rgba(245, 158, 11, 0.3);
+    --danger: #EF4444;
+    --danger-dim: rgba(239, 68, 68, 0.1);
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    --ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  * {
+    box-sizing: border-box;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-sans);
+    font-size: 15px;
+    line-height: 1.5;
+    letter-spacing: -0.01em;
+  }
+  .wrap {
+    position: relative;
+    z-index: 1;
+    width: min(100% - 32px, 860px);
+    margin: 32px auto 56px;
+  }
+  .brand-watermark {
+    position: fixed;
+    z-index: 0;
+    right: max(-30px, calc((100vw - 1100px) / 2));
+    bottom: -60px;
+    width: min(48vw, 500px);
+    aspect-ratio: 1;
+    color: #10B981;
+    opacity: 0.02;
+    pointer-events: none;
+    user-select: none;
+    filter: grayscale(100%);
+  }
+  .brand-watermark svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+  header {
+    margin-bottom: 22px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid var(--border);
+  }
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-family: var(--font-mono);
+    color: var(--accent-secondary);
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-size: 0.72rem;
+    margin-bottom: 8px;
+  }
+  .eyebrow::before {
+    content: "";
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    background: var(--accent-secondary);
+    border-radius: 1px;
+  }
+  h1 {
+    font-size: clamp(1.6rem, 4vw, 2.15rem);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.2;
+    margin: 0 0 8px;
+    color: var(--text);
+  }
+  p { margin: 0; }
+  .sub {
+    color: var(--text-muted);
+    max-width: 680px;
+    font-size: 0.92rem;
+    line-height: 1.55;
+  }
+
+  /* Specular Rim-Lighting & 3D Depth on Panels & Days */
+  .panel, .day, .topic-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.09),
+      0 8px 24px -4px rgba(0, 0, 0, 0.5);
+    position: relative;
+  }
+  .panel {
+    padding: 18px;
+    margin: 18px 0;
+  }
+
+  /* Apple TV-Style 3D Parallax Tilt & Cursor Glare (Top Progress Panel) */
+  .panel[aria-label="Progress summary"] {
+    transform-style: preserve-3d;
+    will-change: transform;
+    transition:
+      transform 0.45s var(--ease-spring),
+      box-shadow 0.45s var(--ease-spring);
+    overflow: hidden;
+  }
+  .panel[aria-label="Progress summary"]::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: radial-gradient(
+      560px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+      rgba(255, 255, 255, 0.08) 0%,
+      rgba(16, 185, 129, 0.03) 35%,
+      transparent 70%
+    );
+    pointer-events: none;
+    opacity: var(--glare-opacity, 0);
+    transition: opacity 0.35s ease;
+    z-index: 1;
+  }
+  .panel[aria-label="Progress summary"]:hover {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.13),
+      0 16px 36px -6px rgba(0, 0, 0, 0.65),
+      0 0 20px -4px rgba(16, 185, 129, 0.08);
+  }
+  .panel[aria-label="Progress summary"] > * {
+    position: relative;
+    z-index: 2;
+  }
+
+  /* Compact unified technical status bar with 1px dividers */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0;
+    background: var(--surface-sub);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.05),
+      0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+  .stat {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    padding: 12px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .stat:not(:last-child) {
+    border-right: 1px solid var(--border);
+  }
+  .stat-label {
+    color: var(--text-muted);
+    font-size: 0.72rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-family: var(--font-mono);
+  }
+  .stat-value {
+    font-family: var(--font-mono);
+    font-size: 1.55rem;
+    font-weight: 700;
+    line-height: 1.1;
+    color: var(--text);
+    letter-spacing: -0.02em;
+  }
+  #percentCount {
+    color: var(--accent-primary);
+  }
+
+  /* Progress track & 3D Specular Shimmer Glass Tube */
+  .progress-track {
+    height: 7px;
+    background: #181818;
+    border: 1px solid #282828;
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 16px 0 8px;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6);
+    position: relative;
+  }
+  .progress-fill {
+    height: 100%;
+    width: 0;
+    background: linear-gradient(
+      180deg,
+      #34D399 0%,
+      #10B981 50%,
+      #059669 100%
+    );
+    border-radius: 3px;
+    transition: width 0.35s var(--ease-spring);
+    position: relative;
+    overflow: hidden;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.38),
+      0 0 12px rgba(16, 185, 129, 0.35);
+  }
+  /* Specular top rim on lit glass tube */
+  .progress-fill::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 50%;
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.35) 0%,
+      rgba(255, 255, 255, 0) 100%
+    );
+    border-radius: 3px 3px 0 0;
+    pointer-events: none;
+    z-index: 1;
+  }
+  /* Continuous 3D specular light sheen */
+  @keyframes progressSheen {
+    0% {
+      transform: translateX(-150%) skewX(-20deg);
+    }
+    45%, 100% {
+      transform: translateX(350%) skewX(-20deg);
+    }
+  }
+  .progress-fill::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 45%;
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.15) 30%,
+      rgba(255, 255, 255, 0.7) 50%,
+      rgba(255, 255, 255, 0.15) 70%,
+      transparent 100%
+    );
+    animation: progressSheen 3.2s infinite var(--ease-spring);
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  .progress-caption {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    color: var(--text-muted);
+    font-size: 0.82rem;
+  }
+  #progressMessage {
+    font-family: var(--font-sans);
+    color: var(--text-muted);
+    font-size: 0.84rem;
+  }
+  #fraction {
+    font-family: var(--font-mono);
+    color: var(--text);
+    font-size: 0.82rem;
+    white-space: nowrap;
+  }
+
+  /* Tactile macOS dark-mode controls with Spring compression */
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+  }
+  button, select {
+    font-family: var(--font-sans);
+    font-size: 0.83rem;
+    font-weight: 500;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    padding: 7px 12px;
+    background: #202020;
+    color: #E2E8F0;
+    cursor: pointer;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.08),
+      0 2px 6px rgba(0, 0, 0, 0.35);
+    transition:
+      transform 0.22s var(--ease-spring),
+      background 0.2s var(--ease-spring),
+      border-color 0.2s var(--ease-spring),
+      box-shadow 0.2s var(--ease-spring),
+      color 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+    transform: scale(1);
+  }
+  button:hover {
+    background: #282828;
+    border-color: var(--border-hover);
+    color: #FFFFFF;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.16),
+      0 4px 12px rgba(0, 0, 0, 0.45);
+    transform: translateY(-1px);
+  }
+  button:active {
+    transform: scale(0.97) translateY(0);
+    background: #181818;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.04),
+      0 1px 3px rgba(0, 0, 0, 0.4);
+    transition-duration: 0.08s;
+  }
+  button:focus-visible, select:focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 1px;
+  }
+  button.primary {
+    color: #064E3B;
+    background: var(--accent-primary);
+    border-color: var(--accent-primary);
+    font-weight: 600;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.3),
+      0 2px 8px rgba(16, 185, 129, 0.35);
+  }
+  button.primary:hover {
+    background: #059669;
+    border-color: #059669;
+    color: #022C22;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.4),
+      0 4px 14px rgba(16, 185, 129, 0.45);
+  }
+  button.danger {
+    color: #F87171;
+    background: #1A1414;
+    border-color: #382424;
+    box-shadow:
+      inset 0 1px 0 rgba(239, 68, 68, 0.15),
+      0 2px 6px rgba(0, 0, 0, 0.35);
+  }
+  button.danger:hover {
+    background: var(--danger-dim);
+    border-color: var(--danger);
+    color: #FCA5A5;
+    box-shadow:
+      inset 0 1px 0 rgba(239, 68, 68, 0.25),
+      0 4px 12px rgba(239, 68, 68, 0.2);
+  }
+  .filter-btn[aria-pressed="true"] {
+    background: var(--accent-secondary-dim);
+    border-color: var(--accent-secondary);
+    color: #FBBF24;
+    font-weight: 600;
+    box-shadow:
+      inset 0 1px 0 rgba(245, 158, 11, 0.25),
+      0 2px 8px rgba(245, 158, 11, 0.2);
+  }
+
+  /* 3D Accordion Spatial Unfolding Animation */
+  @keyframes spatialAccordionReveal {
+    0% {
+      opacity: 0;
+      transform: perspective(1000px) rotateX(-8deg) translateY(-6px);
+      transform-origin: top center;
+    }
+    60% {
+      transform: perspective(1000px) rotateX(1deg) translateY(0);
+    }
+    100% {
+      opacity: 1;
+      transform: perspective(1000px) rotateX(0deg) translateY(0);
+      transform-origin: top center;
+    }
+  }
+
+  /* CodeWithHarry Lesson Guide */
+  .lesson-guide {
+    padding: 0;
+    overflow: hidden;
+    margin: 18px 0;
+  }
+  .lesson-guide > summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    font-weight: 600;
+    background: var(--surface);
+    transition: background 0.2s var(--ease-spring);
+  }
+  .lesson-guide > summary:hover {
+    background: var(--surface-hover);
+  }
+  .lesson-guide > summary::-webkit-details-marker {
+    display: none;
+  }
+  .lesson-guide > summary::after {
+    content: "+";
+    font-family: var(--font-mono);
+    color: var(--accent-secondary);
+    font-size: 1.25rem;
+    line-height: 1;
+    font-weight: 500;
+    transition: transform 0.25s var(--ease-spring);
+  }
+  .lesson-guide[open] > summary::after {
+    content: "−";
+    transform: rotate(180deg);
+  }
+  .lesson-guide[open] > summary {
+    border-bottom: 1px solid var(--border);
+  }
+  .guide-summary-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+  .guide-summary-copy > span:first-child {
+    color: var(--text);
+    font-size: 0.94rem;
+  }
+  .guide-subtitle {
+    color: var(--text-muted);
+    font-size: 0.82rem;
+    font-weight: 400;
+  }
+  .lesson-guide-body {
+    padding: 16px 18px 20px;
+    background: #141414;
+    border-top: none;
+  }
+  details.lesson-guide[open] > .lesson-guide-body {
+    animation: spatialAccordionReveal 0.42s var(--ease-spring) forwards;
+    transform-style: preserve-3d;
+  }
+  .guide-intro {
+    color: var(--text-muted);
+    font-size: 0.88rem;
+    line-height: 1.5;
+    margin: 0 0 14px;
+  }
+  .guide-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .guide-links a {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    text-decoration: none;
+    color: var(--accent-secondary);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 6px 11px;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    font-weight: 600;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.07),
+      0 2px 5px rgba(0, 0, 0, 0.3);
+    transition:
+      transform 0.25s var(--ease-spring),
+      background 0.2s var(--ease-spring),
+      border-color 0.2s var(--ease-spring),
+      box-shadow 0.2s var(--ease-spring),
+      color 0.15s ease;
+  }
+  .guide-links a:hover {
+    background: var(--accent-secondary-dim);
+    border-color: var(--accent-secondary);
+    color: #FBBF24;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.14),
+      0 0 12px -2px rgba(245, 158, 11, 0.25),
+      0 4px 10px rgba(0, 0, 0, 0.4);
+    transform: translateY(-1px);
+  }
+  .guide-links a:active {
+    transform: scale(0.97);
+  }
+
+  /* Spatial 3D Perspective Container for Grid */
+  .lesson-map-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    perspective: 1200px;
+    transform-style: preserve-3d;
+  }
+  .lesson-map-item {
+    min-width: 0;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 12px;
+    background: var(--surface);
+    transform-style: preserve-3d;
+    transform: translate3d(0, 0, 0) scale(1);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.07),
+      0 4px 12px -3px rgba(0, 0, 0, 0.4);
+    transition:
+      transform 0.35s var(--ease-spring),
+      box-shadow 0.35s var(--ease-spring),
+      border-color 0.2s ease,
+      background 0.2s ease;
+    will-change: transform, box-shadow;
+  }
+  .lesson-map-item:hover {
+    transform: translate3d(0, -2px, 12px) scale(1.006);
+    border-color: var(--border-hover);
+    background: #1F1F1F;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.12),
+      0 12px 28px -6px rgba(0, 0, 0, 0.65),
+      0 0 16px -2px rgba(245, 158, 11, 0.12);
+    z-index: 5;
+  }
+  .lesson-map-title {
+    font-weight: 600;
+    font-size: 0.88rem;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+  .lesson-numbers {
+    display: inline-block;
+    font-family: var(--font-mono);
+    color: var(--accent-secondary);
+    background: var(--accent-secondary-dim);
+    border: 1px solid var(--accent-secondary-border);
+    border-radius: 4px;
+    padding: 2px 7px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+    letter-spacing: -0.01em;
+  }
+  .lesson-map-note {
+    color: var(--text-muted);
+    font-size: 0.82rem;
+    line-height: 1.45;
+  }
+  .lesson-map-note code {
+    font-family: var(--font-mono);
+    font-size: 0.8em;
+    background: #242424;
+    color: #E5E7EB;
+    padding: 1px 4px;
+    border-radius: 3px;
+    border: 1px solid #323232;
+  }
+  .guide-note {
+    margin-top: 14px;
+    border-left: 3px solid var(--accent-secondary);
+    border-top: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 14px;
+    background: #171510;
+    color: #D1D5DB;
+    border-radius: 0 4px 4px 0;
+    font-size: 0.84rem;
+    line-height: 1.5;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  }
+  .guide-note strong {
+    color: var(--accent-secondary);
+    font-weight: 600;
+  }
+
+  /* Days & Phases */
+  .days {
+    display: grid;
+    gap: 14px;
+  }
+  .day {
+    padding: 0;
+    overflow: hidden;
+    border-radius: 6px;
+  }
+  .phase-section[hidden] {
+    display: none !important;
+  }
+  .phase-summary {
+    list-style: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    justify-content: space-between;
+    padding: 16px 18px;
+    min-width: 0;
+    background: var(--surface);
+    transition: background 0.2s var(--ease-spring);
+  }
+  .phase-summary::-webkit-details-marker {
+    display: none;
+  }
+  .phase-summary::after {
+    content: "+";
+    font-family: var(--font-mono);
+    color: var(--accent-secondary);
+    font-size: 1.3rem;
+    line-height: 1;
+    font-weight: 500;
+    flex: 0 0 auto;
+    width: 20px;
+    text-align: center;
+    transition: transform 0.25s var(--ease-spring);
+  }
+  .phase-section[open] > .phase-summary::after {
+    content: "−";
+    transform: rotate(180deg);
+  }
+  .phase-section[open] > .phase-summary {
+    border-bottom: 1px solid var(--border);
+  }
+  .phase-summary:hover {
+    background: var(--surface-hover);
+  }
+  .phase-heading {
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+  .phase-kicker {
+    font-family: var(--font-mono);
+    color: var(--accent-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 700;
+    font-size: 0.72rem;
+    margin-bottom: 3px;
+  }
+  h2 {
+    font-size: 1.15rem;
+    font-weight: 650;
+    letter-spacing: -0.02em;
+    line-height: 1.3;
+    margin: 0 0 3px;
+    color: var(--text);
+  }
+  .day-desc {
+    color: var(--text-muted);
+    font-size: 0.86rem;
+    line-height: 1.4;
+  }
+  .phase-meta {
+    flex: 0 0 auto;
+    text-align: right;
+  }
+  .day-count {
+    white-space: nowrap;
+    font-family: var(--font-mono);
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    font-weight: 500;
+    background: var(--surface-sub);
+    border: 1px solid var(--border);
+    padding: 3px 8px;
+    border-radius: 4px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  }
+  .phase-content {
+    padding: 14px 16px 16px;
+    background: #141414;
+  }
+  details.phase-section[open] > .phase-content {
+    animation: spatialAccordionReveal 0.42s var(--ease-spring) forwards;
+    transform-style: preserve-3d;
+  }
+  .phase-content > .topic-list {
+    border-top: none;
+    padding-top: 0;
+  }
+
+  /* Spatial 3D Perspective Container for Topic List */
+  .topic-list {
+    display: grid;
+    gap: 8px;
+    perspective: 1200px;
+    transform-style: preserve-3d;
+  }
+
+  /* Topic card with 3D Z-Axis Hover Lift */
+  .topic {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    padding: 12px 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid transparent;
+    border-radius: 4px;
+    cursor: pointer;
+    transform-style: preserve-3d;
+    transform: translate3d(0, 0, 0) scale(1);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.07),
+      0 4px 14px -3px rgba(0, 0, 0, 0.45);
+    transition:
+      transform 0.35s var(--ease-spring),
+      box-shadow 0.35s var(--ease-spring),
+      border-color 0.2s ease,
+      background 0.2s ease;
+    will-change: transform, box-shadow;
+  }
+  .topic:hover {
+    border-color: var(--border-hover);
+    background: #1F1F1F;
+    transform: translate3d(0, -2px, 12px) scale(1.006);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.12),
+      0 12px 28px -6px rgba(0, 0, 0, 0.65),
+      0 0 14px -3px rgba(255, 255, 255, 0.04);
+    z-index: 5;
+  }
+
+  /* Topic completed state with emerald rim and glow */
+  .topic.done {
+    background: rgba(16, 185, 129, 0.04);
+    border-color: rgba(16, 185, 129, 0.22);
+    border-left: 3px solid var(--accent-primary);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.07),
+      0 4px 14px -3px rgba(0, 0, 0, 0.45);
+  }
+  .topic.done:hover {
+    background: rgba(16, 185, 129, 0.07);
+    border-color: rgba(16, 185, 129, 0.38);
+    border-left: 3px solid var(--accent-primary);
+    transform: translate3d(0, -2px, 12px) scale(1.006);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.12),
+      0 12px 28px -6px rgba(0, 0, 0, 0.65),
+      0 0 18px -2px rgba(16, 185, 129, 0.18);
+    z-index: 5;
+  }
+
+  /* Checkbox with 3D Spring Physics */
+  .topic input[type="checkbox"] {
+    width: 17px;
+    height: 17px;
+    margin: 2px 0 0;
+    accent-color: var(--accent-primary);
+    flex: 0 0 auto;
+    cursor: pointer;
+    border-radius: 3px;
+    transform-style: preserve-3d;
+    transition: transform 0.2s var(--ease-spring);
+  }
+
+  @keyframes checkboxSpringPop {
+    0% {
+      transform: scale(1) rotateY(0deg);
+    }
+    40% {
+      transform: scale(1.22) rotateY(180deg);
+    }
+    75% {
+      transform: scale(0.96) rotateY(360deg);
+    }
+    100% {
+      transform: scale(1) rotateY(360deg);
+    }
+  }
+
+  .topic input[type="checkbox"].spring-pop {
+    animation: checkboxSpringPop 0.48s var(--ease-spring) forwards;
+  }
+
+  @keyframes greenAccentReveal {
+    0% {
+      border-left-color: transparent;
+      box-shadow: none;
+    }
+    45% {
+      border-left-color: #34D399;
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.18),
+        0 0 18px rgba(16, 185, 129, 0.35);
+    }
+    100% {
+      border-left-color: var(--accent-primary);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.07),
+        0 4px 14px -3px rgba(0, 0, 0, 0.45);
+    }
+  }
+
+  .topic.just-completed {
+    animation: greenAccentReveal 0.5s var(--ease-spring) forwards;
+  }
+
+  .topic-content {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .topic-main-label {
+    display: block;
+    cursor: pointer;
+  }
+  .topic-title {
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: -0.01em;
+  }
+  .topic.done .topic-title {
+    color: #9CA3AF;
+    text-decoration: line-through;
+    text-decoration-color: rgba(16, 185, 129, 0.65);
+    text-decoration-thickness: 1.5px;
+  }
+  .topic-note {
+    color: var(--text-muted);
+    font-size: 0.83rem;
+    margin-top: 3px;
+    line-height: 1.45;
+  }
+  .topic[hidden] {
+    display: none !important;
+  }
+  .topic-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin-top: 10px;
+  }
+
+  /* Copy Exam Prompt Button */
+  .copy-prompt-btn {
+    font-family: var(--font-mono);
+    padding: 5px 10px;
+    font-size: 0.76rem;
+    font-weight: 500;
+    border-radius: 4px;
+    background: var(--surface-sub);
+    border: 1px solid var(--border);
+    color: #D1D5DB;
+    letter-spacing: -0.01em;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.07),
+      0 2px 5px rgba(0, 0, 0, 0.3);
+    transition:
+      transform 0.22s var(--ease-spring),
+      background 0.2s var(--ease-spring),
+      border-color 0.2s var(--ease-spring),
+      box-shadow 0.2s var(--ease-spring),
+      color 0.15s ease;
+  }
+  .copy-prompt-btn::before {
+    content: "▣ ";
+    color: var(--accent-primary);
+    font-size: 0.82rem;
+  }
+  .copy-prompt-btn:hover {
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+    background: var(--accent-primary-dim);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.12),
+      0 0 12px -2px rgba(16, 185, 129, 0.3),
+      0 4px 10px rgba(0, 0, 0, 0.4);
+    transform: translateY(-1px);
+  }
+  .copy-prompt-btn:active {
+    transform: scale(0.97);
+  }
+
+  .import-input {
+    display: none;
+  }
+  .empty {
+    color: var(--text-muted);
+    text-align: center;
+    padding: 36px 12px;
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+    background: var(--surface);
+    border: 1px dashed var(--border);
+    border-radius: 6px;
+    display: none;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  }
+  .footer-note {
+    color: var(--text-muted);
+    font-size: 0.82rem;
+    line-height: 1.55;
+    margin-top: 24px;
+    padding-top: 18px;
+    border-top: 1px solid var(--border);
+  }
+
+  /* Toast - Technical CLI look with subtle elevation */
+  .toast {
+    position: fixed;
+    z-index: 100;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #181818;
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    padding: 9px 16px;
+    border-radius: 4px;
+    border: 1px solid var(--accent-primary);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.1),
+      0 12px 28px -4px rgba(0, 0, 0, 0.7),
+      0 0 16px -2px rgba(16, 185, 129, 0.25);
+    display: none;
+    max-width: calc(100% - 32px);
+    letter-spacing: -0.01em;
+  }
+  .toast::before {
+    content: "› ";
+    color: var(--accent-primary);
+    font-weight: 700;
+  }
+
+  @media (max-width: 560px) {
+    .wrap {
+      width: min(100% - 20px, 860px);
+      margin-top: 20px;
+    }
+    .panel {
+      padding: 14px;
+    }
+    .phase-summary {
+      padding: 14px;
+      gap: 10px;
+    }
+    .phase-content {
+      padding: 12px;
+    }
+    .phase-meta {
+      align-self: flex-start;
+      padding-top: 2px;
+    }
+    .day-count {
+      font-size: 0.7rem;
+      padding: 2px 6px;
+    }
+    .brand-watermark {
+      width: 70vw;
+      right: -20px;
+      bottom: -30px;
+      opacity: 0.015;
+    }
+    .stats {
+      grid-template-columns: 1fr;
+    }
+    .stat:not(:last-child) {
+      border-right: none;
+      border-bottom: 1px solid var(--border);
+    }
+    .stat {
+      padding: 10px 14px;
+    }
+    .stat-value {
+      font-size: 1.35rem;
+    }
+    .lesson-guide > summary {
+      padding: 14px;
+    }
+    .lesson-guide-body {
+      padding: 12px 14px 16px;
+    }
+    .lesson-map-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media print {
+    body {
+      background: #ffffff;
+      color: #000000;
+    }
+    .wrap {
+      width: 100%;
+      margin: 0;
+    }
+    .panel, .day {
+      box-shadow: none;
+      break-inside: avoid;
+      border-color: #cccccc;
+      background: #ffffff;
+    }
+    .toolbar, .topic-actions, .footer-note, .toast, .brand-watermark {
+      display: none !important;
+    }
+    .topic.done {
+      background: #f0f0f0;
+      border-left: 3px solid #000000;
+    }
+    .topic-title, .topic.done .topic-title {
+      color: #000000;
+    }
+    .day-count, .lesson-numbers, .copy-prompt-btn {
+      color: #333333;
+      border-color: #999999;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="brand-watermark" aria-hidden="true">
+  <svg viewBox="0 0 500 500" role="presentation" focusable="false" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="250" cy="250" r="211" fill="none" stroke="currentColor" stroke-width="4" />
+    <circle cx="250" cy="250" r="184" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="5 13" />
+    <path d="M142 181 L82 250 L142 319 M358 181 L418 250 L358 319" fill="none" stroke="currentColor" stroke-width="13" stroke-linecap="round" stroke-linejoin="round" />
+    <text x="250" y="235" text-anchor="middle" font-family="system-ui, sans-serif" font-size="78" font-weight="850" fill="currentColor">JS</text>
+    <path d="M202 271 L224 293 L268 249" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" />
+    <text x="250" y="345" text-anchor="middle" font-family="system-ui, sans-serif" font-size="42" font-weight="750" letter-spacing="4" fill="currentColor">TS</text>
+    <text x="250" y="390" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="750" letter-spacing="5" fill="currentColor">QA AUTOMATION</text>
+  </svg>
+</div>
+<main class="wrap">
+  <header>
+    <div class="eyebrow">Interview prep · Progress tracker</div>
+    <h1>Playwright Automation Revision</h1>
+    <p class="sub">A focused learning path in the agreed order: JavaScript foundations, TypeScript essentials, then Playwright automation and interview practice. Tick topics as you complete them. Your progress is saved in this browser on this device.</p>
+  </header>
+
+  <section class="panel" aria-label="Progress summary">
+    <div class="stats">
+      <div class="stat"><div class="stat-label">Completed</div><div class="stat-value" id="completedCount">0</div></div>
+      <div class="stat"><div class="stat-label">Remaining</div><div class="stat-value" id="remainingCount">33</div></div>
+      <div class="stat"><div class="stat-label">Progress</div><div class="stat-value" id="percentCount">0%</div></div>
+    </div>
+    <div class="progress-track" role="progressbar" aria-label="Revision progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="progressBar">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+    <div class="progress-caption"><span id="progressMessage">Every topic starts with one small step.</span><span id="fraction">0 of 33</span></div>
+    <div class="toolbar" aria-label="Checklist controls">
+      <button class="filter-btn" data-filter="all" aria-pressed="true">All topics</button>
+      <button class="filter-btn" data-filter="pending" aria-pressed="false">Pending</button>
+      <button class="filter-btn" data-filter="done" aria-pressed="false">Completed</button>
+      <button id="exportBtn">Export progress</button>
+      <button id="importBtn">Import progress</button>
+      <input class="import-input" id="importFile" type="file" accept=".json,application/json" aria-label="Choose progress backup JSON file">
+      <button id="printBtn">Print</button>
+      <button class="danger" id="resetBtn">Reset checklist</button>
+    </div>
+  </section>
+
+  <details class="panel lesson-guide" id="codeWithHarryGuide">
+    <summary>
+      <span class="guide-summary-copy">
+        <span>CodeWithHarry · JavaScript lesson guide</span>
+        <span class="guide-subtitle">Quick lesson-number reference mapped to our 9 JavaScript tracker topics</span>
+      </span>
+    </summary>
+    <div class="lesson-guide-body">
+      <p class="guide-intro">Use this curated map instead of following all 103 lessons in order. Our tracker order is intentional, so jump to the lesson numbers listed for the topic you are studying.</p>
+      <div class="guide-links">
+        <a href="https://www.youtube.com/playlist?list=PLu0W_9lII9ahR1blWXxgSlL4y9iQBnLpR" target="_blank" rel="noopener noreferrer">Open YouTube playlist ↗</a>
+        <a href="https://www.classcentral.com/course/youtube-javascript-tutorials-for-beginners-in-hindi-513243" target="_blank" rel="noopener noreferrer">View complete lesson list ↗</a>
+      </div>
+      <div class="lesson-map-grid">
+        <article class="lesson-map-item">
+          <div class="lesson-map-title">1. Variables and data types</div>
+          <div class="lesson-numbers">Lessons #2–5</div>
+          <p class="lesson-map-note">Variables, <code>let</code>/<code>const</code>/<code>var</code>, primitives and objects, plus the first practice set.</p>
+        </article>
+        <article class="lesson-map-item">
+          <div class="lesson-map-title">2. Operators, conditions and loops</div>
+          <div class="lesson-numbers">Lessons #6–10</div>
+          <p class="lesson-map-note">Operators, conditionals, practice, <code>for</code> loops and <code>while</code> loops.</p>
+        </article>
+        <article class="lesson-map-item">
+          <div class="lesson-map-title">3. Functions and arrow functions</div>
+          <div class="lesson-numbers">Lessons #11–12, #91</div>
+          <p class="lesson-map-note">Start with functions and their practice set. Use #91 for the later arrow-function revisit.</p>
+        </article>
+        <article class="lesson-map-item">
+          <div class="lesson-map-title">4. Arrays and objects</div>
+          <div class="lesson-numbers">Lessons #4, #16–19</div>
+          <p class="lesson-map-note">Object basics are introduced in #4; #16–19 cover arrays and working through them with loops.</p>
+        </article>
+        <article class="lesson-map-item">
+          <div class="lesson-map-title">5. Array methods</div>
+          <div class="lesson-numbers">Lessons #17–21</div>
+          <p class="lesson-map-note">Array methods, more methods, loops over arrays, <code>map</code>/<code>filter</code>/<code>reduce</code>, and practice.</p>
+        </article>
+        <article class="lesson-map-item">
+          <div class="lesson-map-title">6. Scope, callbacks and closures</div>
+          <div class="lesson-numbers">Lessons #52–53, #88–90</div>
+          <p class="lesson-map-note">Callbacks and callback hell in #52–53; local/global scope, hoisting and closures in #88–90.</p>
+        </article>
+        <article class="lesson-map-item">
+          <div class="lesson-map-title">7. Destructuring, spread and template literals</div>
+          <div class="lesson-numbers">Lessons #13–15, #87</div>
+          <p class="lesson-map-note">Use #13–15 for strings as needed; #87 directly covers destructuring and the spread operator. Practise template literals separately if the lesson does not fully cover them.</p>
+        </article>
+        <article class="lesson-map-item">
+          <div class="lesson-map-title">8. Promises, async and await</div>
+          <div class="lesson-numbers">Lessons #52–63</div>
+          <p class="lesson-map-note">#52–53 introduce callbacks; #54–62 cover Promises, <code>async</code>/<code>await</code> and error handling; #63 is the practice set.</p>
+        </article>
+        <article class="lesson-map-item">
+          <div class="lesson-map-title">9. Modules: import and export</div>
+          <div class="lesson-numbers">Lesson #97</div>
+          <p class="lesson-map-note">The dedicated lesson on JavaScript modules. No need to study the Express/backend project for our current goal.</p>
+        </article>
+      </div>
+      <p class="guide-note"><strong>Keep the scope focused:</strong> You can postpone most DOM/BOM lessons (#23–51) and the later web/backend projects. Watch the listed lessons, practise the code yourself, then use the matching Copy Exam Prompt in the checklist. Lesson numbers are mapped from the published 103-lesson playlist; individual coverage can vary, so use the note for #7 as a gap-check rather than assuming every subtopic is fully covered.</p>
+    </div>
+  </details>
+
+  <section class="days" id="days"></section>
+  <div class="empty" id="emptyState">No topics match this filter.</div>
+  <p class="footer-note">Progress is stored locally in this browser using this tracker’s separate storage key. Use Export progress and Import progress to move a JSON backup between browsers or devices. Each topic has a copyable AI exam prompt. This page works offline after you save the HTML file.</p>
+</main>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(() => {
+  "use strict";
+  const STORAGE_KEY = "standalone_js_ts_playwright_tracker_v1";
+  const plan = [
+    {
+      day: "Phase 1",
+      title: "JavaScript foundations",
+      desc: "Learn the language fundamentals before adding TypeScript types",
+      topics: [
+        ["Variables and data types", "let, const, strings, numbers, booleans, null and undefined."],
+        ["Operators, conditions and loops", "Comparison and logical operators, if/else, for and while."],
+        ["Functions and arrow functions", "Parameters, return values, function declarations and arrow syntax."],
+        ["Arrays and objects", "Create, read and update arrays and object properties."],
+        ["Array methods", "Practise map(), filter(), find() and forEach() with examples."],
+        ["Scope, callbacks and closures", "Understand local/global scope, passing functions and basic closures."],
+        ["Destructuring, spread and template literals", "Read and write common modern JavaScript syntax."],
+        ["Promises, async and await", "Understand asynchronous code and why Playwright actions are awaited."],
+        ["Modules: import and export", "Split code across files and import functions or data."]
+      ]
+    },
+    {
+      day: "Phase 2",
+      title: "TypeScript essentials",
+      desc: "Understand the type system and the syntax used in Playwright projects",
+      topics: [
+        ["Type annotations and type inference", "Annotate variables and understand when TypeScript infers types."],
+        ["Function parameter and return types", "Type function inputs and outputs."],
+        ["Object types, arrays and optional properties", "Describe the shape of data and optional fields."],
+        ["Type aliases and interfaces", "Define reusable data shapes with type and interface."],
+        ["Classes, constructors and this", "Understand class members, object creation and this."],
+        ["Inheritance and polymorphism", "Use extends and explain method overriding."],
+        ["Union types and type narrowing", "Work with values that can have more than one type."],
+        ["Basic generics", "Understand reusable typed functions and common generic syntax."],
+        ["tsconfig.json and JSON imports", "Recognise important TypeScript configuration and JSON import settings."]
+      ]
+    },
+    {
+      day: "Phase 3",
+      title: "Playwright automation and interview practice",
+      desc: "Apply JavaScript and TypeScript to real test automation",
+      topics: [
+        ["Playwright test basics", "test(), expect(), page, browser and built-in fixtures."],
+        ["CSS, XPath and dynamic locators", "Build stable locators and use template literals for dynamic values."],
+        ["Visibility, waits and assertions", "isVisible(), waitFor({ state: 'visible' }) and expect().toBeVisible()."],
+        ["Hidden elements and strict mode", "Handle duplicate matches and locator ambiguity."],
+        ["Page Object Model", "Separate page locators and reusable actions from test logic."],
+        ["Fixtures, hooks and teardown", "Understand built-in/custom fixtures, setup and cleanup."],
+        ["Configuration and test execution", "playwright.config.ts, projects, timeouts, tags, retries and parallelism."],
+        ["JSON data-driven testing", "Import JSON test data and use values in tests."],
+        ["Excel and multiple worksheets", "Read workbook sheets using a TypeScript library such as xlsx."],
+        ["Trace, video and reporting", "Capture failures, inspect traces and configure reports."],
+        ["API testing and response validation", "Use Playwright request fixtures and validate status and response data."],
+        ["Authentication and storage state", "Reuse authentication state across tests."],
+        ["Frames, tabs and file uploads", "Handle frames, new pages, downloads and file inputs."],
+        ["Network interception and mocking", "Use route(), fulfill() and waitForResponse() appropriately."],
+        ["Scenario-based coding and mock interview", "Explain concepts aloud and solve locator, data and debugging scenarios."]
+      ]
+    }
+  ];
+
+  // Each topic gets a specific exam brief. The common wrapper below turns each brief
+  // into a copy-ready prompt for any AI chat, without exposing the answer key up front.
+  const examSpecs = {
+    "Variables and data types": "Test var, let, const, strings, numbers, booleans, null, undefined, typeof, reassignment and common type-conversion traps. Include short output-prediction questions and one practical example choosing const versus let.",
+    "Operators, conditions and loops": "Test arithmetic, strict versus loose equality, comparison and logical operators, truthy/falsy values, if/else, switch, for and while loops. Include boundary conditions and a small coding task that uses a loop and condition.",
+    "Functions and arrow functions": "Test function declarations versus expressions, arrow functions, parameters, return values, default parameters and when braces require an explicit return. Ask the learner to write and debug small functions.",
+    "Arrays and objects": "Test array indexing and mutation, object properties, dot versus bracket access, adding/updating fields, nested data, and references versus primitive values at a beginner level. Include a small data-manipulation task.",
+    "Array methods": "Test map, filter, find and forEach, what each returns, callback parameters, chaining and choosing the appropriate method. Include output prediction and a coding task over an array of objects.",
+    "Scope, callbacks and closures": "Test global/function/block scope, let versus var in blocks, callback functions, passing a function versus calling it, and a simple closure that remembers a value. Include output prediction and one practical callback exercise.",
+    "Destructuring, spread and template literals": "Test array/object destructuring, renaming variables, default values, rest/spread syntax, shallow copying, merging objects/arrays and template literals. Include code-reading and a transformation exercise.",
+    "Promises, async and await": "Test pending/fulfilled/rejected Promise states, then/catch/finally, async return values, await, error handling with try/catch, sequential versus parallel awaits, and why Playwright operations are awaited. Include a small async debugging task.",
+    "Modules: import and export": "Test named versus default exports/imports, path and extension basics, module boundaries and common import mistakes. Ask the learner to sketch or write two small files where one exports a function and another imports and uses it.",
+    "Type annotations and type inference": "Test TypeScript annotations for string, number, boolean, arrays and inferred types; distinguish compile-time type checking from runtime behavior. Include examples that should compile or produce type errors.",
+    "Function parameter and return types": "Test typed parameters, return annotations, void, optional/default parameters, and how TypeScript catches mismatched arguments or return values. Include a function-writing task and ask for its correct types.",
+    "Object types, arrays and optional properties": "Test typing object literals, arrays of typed objects, optional properties with ?, nested object shapes and safe access to optional values. Include a practical typed test-data object and a type-error diagnosis.",
+    "Type aliases and interfaces": "Test declaring and reusing type aliases and interfaces, optional/readonly properties, extension with extends, and how to choose each for simple data models. Include a small reusable test-data shape exercise.",
+    "Classes, constructors and this": "Test class properties, constructors, methods, access modifiers at a basic level, creating instances, and how this refers to the current instance. Include output prediction and a small class-writing task.",
+    "Inheritance and polymorphism": "Test extends, super(), method overriding, base-class references and runtime polymorphism using TypeScript classes. Ask for a practical example and a short explanation of which overridden method is called and why.",
+    "Union types and type narrowing": "Test union types such as string | number, typeof checks, narrowing before using type-specific methods, and handling all possible cases. Include one debugging task where TypeScript rejects unsafe use of a union.",
+    "Basic generics": "Test what a generic type parameter means, simple generic functions, preserving input/output types, and reading syntax such as <T>. Keep examples beginner-friendly and related to reusable test utilities or data.",
+    "tsconfig.json and JSON imports": "Test the purpose of tsconfig.json, target/module/strict at a conceptual level, resolveJsonModule and esModuleInterop where relevant, and importing typed JSON test data. Include a configuration/debugging scenario; do not assume project settings not stated by the learner.",
+    "Playwright test basics": "Test the roles of test(), expect(), page, browser, browser context and built-in fixtures; basic test structure; assertions; and how to run a test. Include one short TypeScript test-writing task.",
+    "CSS, XPath and dynamic locators": "Test CSS versus XPath selection, relative and robust locators, dynamic XPath/template literals, text/attribute matching, locator chaining and avoiding brittle positional selectors. Give an HTML snippet and ask the learner to produce and justify a locator.",
+    "Visibility, waits and assertions": "Test locator.isVisible() versus locator.waitFor({ state: 'visible' }) versus expect(locator).toBeVisible(), immediate checks versus waiting, auto-waiting assertions and timeout behavior. Include a scenario and ask which approach fits, with code.",
+    "Hidden elements and strict mode": "Test Playwright strict-mode errors when a locator matches multiple elements, hidden duplicate elements, locator.count(), filter({ visible: true }) where supported, first/last/nth risks, and robust ways to scope a locator. Include a hidden-duplicate scenario.",
+    "Page Object Model": "Test the purpose of POM, what belongs in a page class versus a test, locators, constructors, reusable action methods and keeping assertions appropriate. Ask for a tiny page object and a test that uses it.",
+    "Fixtures, hooks and teardown": "Test beforeEach/afterEach and beforeAll/afterAll, fixtures, test-scoped versus worker-scoped concepts, cleanup/teardown and why cleanup should happen even after failures. Include a TypeScript example or debugging question.",
+    "Configuration and test execution": "Test common playwright.config.ts settings, projects, baseURL, timeout, retries, workers, reporters, testDir, tags/grep, and CLI commands. Ask the learner to choose or explain commands for realistic run scenarios.",
+    "JSON data-driven testing": "Test importing JSON test data, typing or safely reading records, iterating data with test cases, avoiding accidental shared mutation, and separating data from test logic. Ask for a small data-driven Playwright example.",
+    "Excel and multiple worksheets": "Test reading an XLSX workbook in TypeScript with a library such as xlsx, selecting workbook.Sheets by sheet name, converting rows with sheet_to_json, handling missing sheet names and combining data from two sheets. Include a coding/debugging scenario.",
+    "Trace, video and reporting": "Test what Playwright traces, screenshots, videos and reporters provide, relevant configuration settings such as trace/video on failure, how to open a trace, and how each helps diagnose failures. Ask for config snippets and a failure-investigation scenario.",
+    "API testing and response validation": "Test Playwright's request fixture/APIRequestContext, GET/POST basics, response status, headers and JSON body assertions, and separating API setup from UI verification. Include a short test that validates a response body.",
+    "Authentication and storage state": "Test login setup, storageState, reusing authenticated sessions, setup projects, safe handling of credential/state files, and when state can become stale. Include a scenario-based configuration task.",
+    "Frames, tabs and file uploads": "Test frameLocator, handling a newly opened page with waitForEvent('page'), downloads versus uploads, setInputFiles and common timing mistakes. Include a scenario for an iframe and one for a new tab.",
+    "Network interception and mocking": "Test page.route(), route.fulfill(), route.continue(), waitForResponse(), mocking responses and when network mocking is useful. Include a small route-mocking task and a response-waiting scenario.",
+    "Scenario-based coding and mock interview": "Run a mixed practical checkpoint across JavaScript, TypeScript and Playwright: debugging locators, visibility/wait choices, dynamic XPath, JSON/Excel data, POM/fixtures, assertions and explaining code aloud. Start with fundamentals, then adapt difficulty to my answers."
+  };
+
+  const allTopics = plan.flatMap(day => day.topics.map(topic => topic[0]));
+  let completed = new Set();
+  let currentFilter = "all";
+  // Start with the first learning phase open; preserve the user's disclosure choices on re-render.
+  let openPhases = new Set(["Phase 1"]);
+  let allFilterOpenPhases = new Set(["Phase 1"]);
+  let skipOpenStateCapture = false;
+  let toastTimer;
+
+  const $ = id => document.getElementById(id);
+  const escapeHtml = value => String(value).replace(/[&<>"']/g, ch => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  })[ch]);
+
+  function showToast(message) {
+    const toast = $("toast");
+    toast.textContent = message;
+    toast.style.display = "block";
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { toast.style.display = "none"; }, 2400);
+  }
+
+  function save() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify([...completed]));
+    } catch (error) {
+      showToast("Could not save locally. Use Export progress to keep a backup.");
+    }
+  }
+
+  function load() {
+    try {
+      const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+      if (Array.isArray(stored)) {
+        completed = new Set(stored.filter(name => allTopics.includes(name)));
+      }
+    } catch (error) {
+      completed = new Set();
+    }
+  }
+
+  function renderDays() {
+    const existingPhases = [...$("days").querySelectorAll(".phase-section")];
+    if (existingPhases.length && !skipOpenStateCapture) {
+      openPhases = new Set(existingPhases.filter(section => section.open).map(section => section.dataset.phase));
+    }
+    skipOpenStateCapture = false;
+
+    $("days").innerHTML = plan.map((day, dayIndex) => {
+      const dayTopics = day.topics.map(([name, note], topicIndex) => {
+        const done = completed.has(name);
+        const visible = currentFilter === "all" ||
+          (currentFilter === "done" && done) ||
+          (currentFilter === "pending" && !done);
+        const safeName = escapeHtml(name);
+        return `<div class="topic${done ? " done" : ""}" data-topic="${safeName}" ${visible ? "" : 'hidden'}>
+          <input id="topic-check-${dayIndex}-${topicIndex}" type="checkbox" data-name="${safeName}" ${done ? "checked" : ""} aria-label="Mark ${safeName} as complete">
+          <div class="topic-content">
+            <label class="topic-main-label" for="topic-check-${dayIndex}-${topicIndex}"><span class="topic-title">${safeName}</span><div class="topic-note">${escapeHtml(note)}</div></label>
+            <div class="topic-actions"><button type="button" class="copy-prompt-btn" data-prompt-topic="${safeName}" title="Copy an AI exam prompt for ${safeName}">Copy exam prompt</button></div>
+          </div>
+        </div>`;
+      }).join("");
+      const dayDone = day.topics.filter(([name]) => completed.has(name)).length;
+      const dayVisibleCount = day.topics.filter(([name]) => {
+        const done = completed.has(name);
+        return currentFilter === "all" || (currentFilter === "done" && done) || (currentFilter === "pending" && !done);
+      }).length;
+      const hiddenByFilter = currentFilter !== "all" && dayVisibleCount === 0;
+      return `<details class="day phase-section" data-phase="${escapeHtml(day.day)}" aria-labelledby="day-title-${dayIndex}" ${openPhases.has(day.day) ? "open" : ""} ${hiddenByFilter ? "hidden" : ""}>
+        <summary class="phase-summary">
+          <div class="phase-heading">
+            <div class="phase-kicker">${escapeHtml(day.day)}</div>
+            <h2 id="day-title-${dayIndex}">${escapeHtml(day.title)}</h2>
+            <p class="day-desc">${escapeHtml(day.desc)}</p>
+          </div>
+          <div class="phase-meta"><span class="day-count">${dayDone} / ${day.topics.length} complete</span></div>
+        </summary>
+        <div class="phase-content"><div class="topic-list">${dayTopics}</div></div>
+      </details>`;
+    }).join("");
+    $("emptyState").style.display = allTopics.filter(name => {
+      const done = completed.has(name);
+      return currentFilter === "all" ||
+        (currentFilter === "done" && done) ||
+        (currentFilter === "pending" && !done);
+    }).length ? "none" : "block";
+    updateStats();
+  }
+
+  function updateStats() {
+    const total = allTopics.length;
+    const count = allTopics.filter(name => completed.has(name)).length;
+    const percent = total ? Math.round(count / total * 100) : 0;
+    $("completedCount").textContent = count;
+    $("remainingCount").textContent = total - count;
+    $("percentCount").textContent = percent + "%";
+    $("fraction").textContent = `${count} of ${total}`;
+    $("progressFill").style.width = percent + "%";
+    $("progressBar").setAttribute("aria-valuenow", String(percent));
+    $("progressMessage").textContent = percent === 100 ? "All topics completed. Time for a mock interview!" :
+      percent >= 75 ? "Nearly there. Practise explaining answers aloud." :
+      percent >= 40 ? "Good progress. Keep building recall." :
+      percent > 0 ? "Nice start. Keep the momentum going." :
+      "Every topic starts with one small step.";
+    document.querySelectorAll(".day").forEach((dayElement, index) => {
+      const day = plan[index];
+      const count = day.topics.filter(([name]) => completed.has(name)).length;
+      const label = dayElement.querySelector(".day-count");
+      if (label) label.textContent = `${count} / ${day.topics.length} complete`;
+    });
+  }
+
+  function buildExamPrompt(topicName) {
+    const scope = examSpecs[topicName];
+    if (!scope) throw new Error("No exam prompt is configured for this topic.");
+
+    const phase = plan.find(day => day.topics.some(([name]) => name === topicName));
+    if (!phase) throw new Error("Could not determine the learning phase for this topic.");
+
+    let languageRules;
+    if (phase.day === "Phase 1") {
+      languageRules = `LEARNING PHASE: PHASE 1 — JAVASCRIPT FOUNDATIONS
+LANGUAGE RULE: Test me in plain modern JavaScript (ES6+) ONLY. Every code snippet must be JavaScript, not TypeScript. Do NOT use TypeScript annotations, interfaces, type aliases, generics, or other TypeScript-only syntax. Do NOT use Playwright APIs, Playwright test scripts, or other test frameworks in this exam. Keep examples independent of automation frameworks. Do not phrase a question as “a TypeScript test script.” Assess JavaScript behavior and syntax only. You may offer an optional one-sentence note about how the concept will later appear in TypeScript, but only after the exam verdict, and do not include that note in my score.`;
+    } else if (phase.day === "Phase 2") {
+      languageRules = `LEARNING PHASE: PHASE 2 — TYPESCRIPT ESSENTIALS
+LANGUAGE RULE: Test me using TypeScript syntax and concepts. Keep code examples independent of Playwright and other automation frameworks because I am learning TypeScript before applying it to Playwright. You may briefly compare a TypeScript concept with JavaScript when that helps explain the difference, but the scored questions must assess the stated TypeScript topic. Do not require Playwright APIs or framework knowledge.`;
+    } else {
+      languageRules = `LEARNING PHASE: PHASE 3 — PLAYWRIGHT AUTOMATION AND INTERVIEW PRACTICE
+LANGUAGE RULE: Use TypeScript with Playwright Test for relevant examples and coding tasks. Use realistic Playwright APIs such as test(), expect(), page and fixtures when appropriate to this topic. Do not switch to Selenium/Java. For the “Scenario-based coding and mock interview” topic, it is intentional to revisit JavaScript behavior, TypeScript syntax, and Playwright together; for other topics, stay focused on the named topic and its practical Playwright use.`;
+    }
+
+    return `Act as my strict but supportive technical examiner and tutor. I am preparing for QA automation interviews and following a staged learning plan: JavaScript first, then TypeScript, then Playwright automation. Test me at the stage I am currently studying; do not jump ahead.
+
+TOPIC: ${topicName}
+LEARNING PHASE: ${phase.day} — ${phase.title}
+
+${languageRules}
+
+WHAT TO TEST: ${scope}
+
+EXAM RULES:
+1. Test whether I can genuinely explain and apply the topic, not just recognise definitions.
+2. Keep this a short exam of about 5 scored questions. Ask exactly one question at a time and wait for my answer before continuing. Do not show the answer key or provide hints before I attempt the question.
+3. Use a mix of conceptual questions, code/output prediction, debugging, and a short coding task where appropriate to this topic. Keep the questions focused on the topic above and at an interview-appropriate level.
+4. If my answer is vague or partly wrong, ask one concise follow-up or let me correct it before giving the explanation. Do not mark a guess as mastery.
+5. After each answer, briefly mark it correct, partly correct, or incorrect and explain the key point in simple language. Then move to the next question.
+6. Follow the LANGUAGE RULE above strictly. Do not introduce syntax, libraries, frameworks, or concepts from a later phase just to make an example sound practical.
+7. At the end, give a score out of 10, list the concepts I demonstrated well, list the exact gaps to revise, and give a clear verdict: PASS (at least 8/10 with no critical misconception), NEEDS PRACTICE (6–7/10), or REVISIT THIS TOPIC (0–5/10 or any critical misconception).
+8. If I fail, give me a short targeted practice set, not a long lecture. Do not mark the tracker complete on my behalf.
+
+Begin now with Question 1 only. Do not reveal the remaining questions or answers in advance.`;
+  }
+
+  async function copyText(text) {
+    if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+      try {
+        await navigator.clipboard.writeText(text);
+        return true;
+      } catch (error) {
+        // Continue to the local fallback, which also works when the page is opened as a file.
+      }
+    }
+    const area = document.createElement("textarea");
+    area.value = text;
+    area.setAttribute("readonly", "");
+    area.style.position = "fixed";
+    area.style.opacity = "0";
+    area.style.pointerEvents = "none";
+    document.body.appendChild(area);
+    area.select();
+    let copied = false;
+    try { copied = document.execCommand("copy"); } catch (error) { copied = false; }
+    area.remove();
+    return copied;
+  }
+
+  $("days").addEventListener("click", async event => {
+    const button = event.target.closest("button[data-prompt-topic]");
+    if (!button) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const topicName = button.dataset.promptTopic;
+    try {
+      const success = await copyText(buildExamPrompt(topicName));
+      showToast(success ? `Exam prompt copied: ${topicName}` : "Could not copy automatically. Try a different browser or clipboard permission.");
+    } catch (error) {
+      showToast("Could not create the exam prompt for this topic.");
+    }
+  });
+
+  $("days").addEventListener("change", event => {
+    const input = event.target;
+    if (!(input instanceof HTMLInputElement) || input.type !== "checkbox") return;
+    const name = input.dataset.name;
+    if (!name || !allTopics.includes(name)) return;
+    if (input.checked) completed.add(name);
+    else completed.delete(name);
+    save();
+    renderDays();
+  });
+
+  document.querySelectorAll(".filter-btn").forEach(button => {
+    button.addEventListener("click", () => {
+      const selectedFilter = button.dataset.filter;
+      if (!["all", "pending", "done"].includes(selectedFilter)) return;
+      // Save the user's disclosure choices for the full-list view before changing filters.
+      if (currentFilter === "all") {
+        allFilterOpenPhases = new Set([...$("days").querySelectorAll(".phase-section")]
+          .filter(section => section.open).map(section => section.dataset.phase));
+      }
+      currentFilter = selectedFilter;
+      // When filtering, automatically open every phase that contains a matching topic
+      // so the filtered results are immediately visible rather than hidden in collapsed sections.
+      if (selectedFilter === "all") {
+        openPhases = new Set(allFilterOpenPhases);
+      } else {
+        openPhases = new Set(plan.filter(day => day.topics.some(([name]) => {
+          const isDone = completed.has(name);
+          return selectedFilter === "done" ? isDone : !isDone;
+        })).map(day => day.day));
+      }
+      skipOpenStateCapture = true;
+      document.querySelectorAll(".filter-btn").forEach(btn =>
+        btn.setAttribute("aria-pressed", String(btn === button)));
+      renderDays();
+    });
+  });
+
+  $("exportBtn").addEventListener("click", () => {
+    const payload = {
+      title: "Playwright Automation Revision Tracker",
+      exportedAt: new Date().toISOString(),
+      completedTopics: [...completed]
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = "playwright-revision-progress.json";
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+    showToast("Progress export started.");
+  });
+
+  $("importBtn").addEventListener("click", () => $("importFile").click());
+
+  $("importFile").addEventListener("change", async event => {
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+    try {
+      const raw = await file.text();
+      const payload = JSON.parse(raw);
+      if (!payload || typeof payload !== "object" || Array.isArray(payload) || !Array.isArray(payload.completedTopics)) {
+        throw new Error("This file is not a valid Playwright tracker progress backup.");
+      }
+      if (!payload.completedTopics.every(name => typeof name === "string")) {
+        throw new Error("The backup contains invalid topic entries.");
+      }
+      const unknownTopics = [...new Set(payload.completedTopics.filter(name => !allTopics.includes(name)))];
+      if (unknownTopics.length) {
+        const preview = unknownTopics.slice(0, 3).join(", ");
+        throw new Error(`The backup contains ${unknownTopics.length} topic(s) not found in this tracker: ${preview}${unknownTopics.length > 3 ? "…" : ""}. No changes were made.`);
+      }
+      const imported = new Set(payload.completedTopics);
+      const count = imported.size;
+      const confirmed = window.confirm(`Import ${count} completed topic(s) from this backup?
+
+This will REPLACE all progress currently saved in this browser for this standalone tracker. This cannot be undone unless you exported a backup first.`);
+      if (!confirmed) {
+        showToast("Import cancelled. Your existing progress was kept.");
+        return;
+      }
+      completed = imported;
+      save();
+      renderDays();
+      showToast(`Progress imported: ${count} topic(s) completed.`);
+    } catch (error) {
+      showToast(error instanceof SyntaxError ? "That file is not valid JSON. No changes were made." : (error.message || "Could not import this backup."));
+    } finally {
+      event.target.value = "";
+    }
+  });
+
+  $("printBtn").addEventListener("click", () => window.print());
+
+  $("resetBtn").addEventListener("click", () => {
+    if (!window.confirm("Reset all completed topics? This cannot be undone unless you exported a backup.")) return;
+    completed.clear();
+    save();
+    renderDays();
+    showToast("Checklist reset.");
+  });
+
+  load();
+  renderDays();
+
+  // Apple-inspired 3D Spatial Animations & Spring Physics Enhancements
+  (() => {
+    // 1. Apple TV-Style 3D Parallax Tilt & Cursor Glare
+    if (window.matchMedia("(pointer: fine)").matches) {
+      const progressPanel = document.querySelector('.panel[aria-label="Progress summary"]');
+      if (progressPanel) {
+        progressPanel.addEventListener("mousemove", e => {
+          const rect = progressPanel.getBoundingClientRect();
+          const x = e.clientX - rect.left;
+          const y = e.clientY - rect.top;
+          const centerX = rect.width / 2;
+          const centerY = rect.height / 2;
+
+          const rotX = Math.max(-3.5, Math.min(3.5, ((y - centerY) / centerY) * -3.5));
+          const rotY = Math.max(-3.5, Math.min(3.5, ((x - centerX) / centerX) * 3.5));
+
+          progressPanel.style.setProperty("--mouse-x", `${x.toFixed(1)}px`);
+          progressPanel.style.setProperty("--mouse-y", `${y.toFixed(1)}px`);
+          progressPanel.style.setProperty("--glare-opacity", "1");
+          progressPanel.style.transform = `perspective(1000px) rotateX(${rotX.toFixed(2)}deg) rotateY(${rotY.toFixed(2)}deg)`;
+        });
+
+        progressPanel.addEventListener("mouseleave", () => {
+          progressPanel.style.setProperty("--glare-opacity", "0");
+          progressPanel.style.transform = "perspective(1000px) rotateX(0deg) rotateY(0deg)";
+        });
+      }
+    }
+
+    // 2. Checkbox 3D Spring Pop & Accent Bar Micro-Interaction
+    $("days").addEventListener("change", event => {
+      const input = event.target;
+      if (input && input.type === "checkbox" && input.checked) {
+        const topicName = input.dataset.name;
+        if (!topicName) return;
+        requestAnimationFrame(() => {
+          const topicEl = document.querySelector(`.topic[data-topic="${CSS.escape(topicName)}"]`);
+          if (topicEl) {
+            topicEl.classList.add("just-completed");
+            const checkEl = topicEl.querySelector('input[type="checkbox"]');
+            if (checkEl) {
+              checkEl.classList.add("spring-pop");
+            }
+          }
+        });
+      }
+    });
+  })();
+})();
+</script>
+</body>
+</html>
